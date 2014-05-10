@@ -16,19 +16,36 @@
 
 /* -------------------------------------------------------------------------- */
 
-void* thread_listen(void *p)
-{
-	struct sockaddr_in sa; 
-	socklen_t sa_len;
-	char buf[1024];
-	ssize_t recsize;
+/* ws_ -> wifi_sim */
 
+int ws_socket_create()
+{
 	int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
 	if (-1 == sock)
 	{
 		printf("Error Creating Socket");
 		exit(EXIT_FAILURE);
 	}
+
+	return sock;
+}
+
+void ws_thread_create(void* (*func)(void*), void *data)
+{
+	pthread_t tid;
+	pthread_create(&tid, NULL, func, data);
+	pthread_detach(tid);
+}
+
+/* -------------------------------------------------------------------------- */
+
+void* thread_listen(void *p)
+{
+	struct sockaddr_in sa; 
+	socklen_t sa_len;
+	char buf[1024];
+	ssize_t recsize;
+	int sock = ws_socket_create();
 
 	memset(&sa, 0, sizeof(sa));
 	sa.sin_family = AF_INET;
@@ -43,7 +60,7 @@ void* thread_listen(void *p)
 	}
 
 	getsockname(sock, (struct sockaddr *)&sa, &sa_len);
-	printf("port: %d\n", ntohs(sa.sin_port));
+	printf("my port -> %d\n",ntohs(sa.sin_port));
 
 	for (;;) 
 	{
@@ -59,30 +76,24 @@ void* thread_listen(void *p)
 
 /* -------------------------------------------------------------------------- */
 
-bool send_msg(struct sockaddr_in sa, char *buf, int blen)
-{
-	int sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
-	return sendto(sock, buf, blen, 0,(struct sockaddr*)&sa, sizeof(sa)) > 0;
-}
-
-bool tick()
+bool loop()
 {
 	struct sockaddr_in sa;
 	char addr[20] = LOCALHOST; int port;
 	char buf[1024]; int blen;
+	int sock;
 
-	for (;;) 
-	{
-		if(scanf(" %s %d %1024[^\n]%n", addr, &port, buf, &blen) == EOF)
-			return false;
+	if(scanf(" %s %d %1024[^\n]%n", addr, &port, buf, &blen) == EOF)
+		return false;
 
-		memset(&sa, 0, sizeof sa);
-		sa.sin_family = AF_INET;
-		sa.sin_addr.s_addr = inet_addr(addr);
-		sa.sin_port = htons(port);
+	memset(&sa, 0, sizeof sa);
+	sa.sin_family = AF_INET;
+	sa.sin_addr.s_addr = inet_addr(addr);
+	sa.sin_port = htons(port);
 
-		send_msg(sa, buf, blen);
-	}
+	sock = ws_socket_create();
+	sendto(sock, buf, blen, 0,(struct sockaddr*)&sa, sizeof(sa));
+	close(sock);
 
 	return true;
 }
@@ -91,12 +102,11 @@ bool tick()
 
 int main(void)
 {
-	pthread_t tid;
+	printf("## Wi-Fi (ethernet for now) Sim by JulioRdS ##\n");
+	printf("Usage: <dest-ip> <dest-port> <message>\n");
 
-	pthread_create(&tid, NULL, thread_listen, NULL);
-	pthread_detach(tid);
-
-	while(tick());
+	ws_thread_create(thread_listen, NULL);
+	while(loop());
 
 	return 0;
 }
