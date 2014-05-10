@@ -103,12 +103,12 @@ static void* thread_listen(void *p)
 		if (recsize < 0)
 			continue;
 
-		recv_data = malloc(sizeof(struct thread_recv_data));
+		recv_data           = malloc(sizeof(struct thread_recv_data));
 		recv_data->callback = data->callback;
+		recv_data->port     = ntohs(sa.sin_port);
+		recv_data->buf_l    = (int)recsize;
 		strcpy(recv_data->addr, inet_ntoa(sa.sin_addr));
-		recv_data->port = ntohs(sa.sin_port);
 		memcpy(recv_data->buf, buf, (int)recsize);
-		recv_data->buf_l = (int)recsize;
 
 		ws_thread_create(thread_recv, recv_data);
 	}
@@ -119,8 +119,12 @@ static void* thread_listen(void *p)
 
 int ws_listen(ws_recv_cb cb, int port)
 {
-	struct thread_listen_data *data = malloc(sizeof(struct thread_listen_data));
+	struct thread_listen_data *data;
 
+	if(cb == NULL) 
+		return -1;
+
+	data = malloc(sizeof(struct thread_listen_data));
 	data->callback = cb;
 	data->port = port;
 
@@ -137,7 +141,7 @@ void ws_send(char *addr, int port, char *buf, int buf_l)
 	struct sockaddr_in sa;
 	int sock;
 
-	memset(&sa, 0, sizeof sa);
+	memset(&sa, 0, sizeof(sa));
 	sa.sin_family = AF_INET;
 	sa.sin_addr.s_addr = inet_addr(addr);
 	sa.sin_port = htons(port);
