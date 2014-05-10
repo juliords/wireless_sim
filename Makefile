@@ -1,14 +1,14 @@
 CPATH=-I.
 
 # .c, .h, .S
-RESOURCES=main.c 
+RESOURCES=main.c
 
 SRC=$(filter %.c, ${RESOURCES})
 HDR=$(filter %.h, ${RESOURCES})
 OBJ=${SRC:.c=.o}
 
 CFLAGS= -O2 -Wall -g $(CPATH)
-LDFLAGS=-O2 -lm
+LDFLAGS=-O2 -lm -lpthread
 EXE=main
 
 .PHONY: all test clean
