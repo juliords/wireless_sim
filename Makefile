@@ -1,7 +1,8 @@
 CPATH=-I.
 
 # .c, .h, .S
-RESOURCES=main.c
+RESOURCES=main.c \
+	  udp.c udp.h
 
 SRC=$(filter %.c, ${RESOURCES})
 HDR=$(filter %.h, ${RESOURCES})
