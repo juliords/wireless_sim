@@ -67,7 +67,7 @@ static void* thread_recv(void *p)
 struct thread_listen_data
 {
 	ws_recv_cb callback;
-	int port;
+	int sock;
 };
 
 static void* thread_listen(void *p)
@@ -75,31 +75,15 @@ static void* thread_listen(void *p)
 	struct thread_listen_data *data = (struct thread_listen_data*)p;
 
 	struct sockaddr_in sa; 
-	socklen_t sa_len;
+	socklen_t sa_len = sizeof(sa);
 	char buf[BUF_MAX];
 	ssize_t recsize;
-	int sock = ws_socket_create();
-
-	memset(&sa, 0, sizeof(sa));
-	sa.sin_family = AF_INET;
-	sa.sin_addr.s_addr = htonl(INADDR_ANY);
-	sa.sin_port = htons(data->port);
-	sa_len = sizeof(sa);
-
-	if (-1 == bind(sock,(struct sockaddr *)&sa, sizeof(sa)))
-	{
-		perror("error bind failed");
-		exit(EXIT_FAILURE);
-	}
-
-	getsockname(sock, (struct sockaddr *)&sa, &sa_len);
-	data->port = ntohs(sa.sin_port);
 
 	for (;;) 
 	{
 		struct thread_recv_data *recv_data;
 
-		recsize = recvfrom(sock, (void *)buf, sizeof(buf), 0, (struct sockaddr *)&sa, &sa_len);
+		recsize = recvfrom(data->sock, (void *)buf, sizeof(buf), 0, (struct sockaddr *)&sa, &sa_len);
 		if (recsize < 0)
 			continue;
 
@@ -114,6 +98,7 @@ static void* thread_listen(void *p)
 	}
 
 	free(p);
+	close(data->sock);
 	return NULL;
 }
 
@@ -121,17 +106,34 @@ int ws_listen(ws_recv_cb cb, int port)
 {
 	struct thread_listen_data *data;
 
+	struct sockaddr_in sa; 
+	socklen_t sa_len;
+	int sock;
+
 	if(cb == NULL) 
 		return -1;
 
+	sock = ws_socket_create();
+	memset(&sa, 0, sizeof(sa));
+	sa_len = sizeof(sa);
+
+	sa.sin_family = AF_INET;
+	sa.sin_addr.s_addr = htonl(INADDR_ANY);
+	sa.sin_port = htons(port);
+
+	if (-1 == bind(sock,(struct sockaddr *)&sa, sizeof(sa)))
+	{
+		perror("error bind failed");
+		exit(EXIT_FAILURE);
+	}
+
 	data = malloc(sizeof(struct thread_listen_data));
 	data->callback = cb;
-	data->port = port;
-
+	data->sock = sock;
 	ws_thread_create(thread_listen, data);
 
-	usleep(10);
-	return data->port;
+	getsockname(sock, (struct sockaddr *)&sa, &sa_len);
+	return ntohs(sa.sin_port); /* port number */
 }
 
 /* -------------------------------------------------------------------------- */
