@@ -1,7 +1,7 @@
 CPATH=-I.
 
 # .c, .h, .S
-RESOURCES=main.c \
+RESOURCES=server.c \
 	  udp.c udp.h
 
 SRC=$(filter %.c, ${RESOURCES})
@@ -10,7 +10,7 @@ OBJ=${SRC:.c=.o}
 
 CFLAGS= -O2 -Wall -g $(CPATH)
 LDFLAGS=-O2 -lm -lpthread
-EXE=main
+EXE=server
 
 .PHONY: all test clean
 all: $(EXE)
