@@ -6,7 +6,7 @@
 
 /* -------------------------------------------------------------------------- */
 
-static void dummy_recv_cb(char *addr, int port, int buf_l, char *buf)
+static void dummy_recv_cb(char *addr, int port, char *buf, int buf_l)
 {
 	printf("%s:%d %.*s\n", addr, port, buf_l, buf);
 }

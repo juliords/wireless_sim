@@ -14,9 +14,6 @@
 
 #include "udp.h"
 
-#define LOCALHOST "127.0.0.1"
-#define BUF_MAX 1024
-
 /* -------------------------------------------------------------------------- */
 
 static inline int ws_socket_create()
@@ -56,7 +53,7 @@ struct thread_recv_data
 static void* thread_recv(void *p)
 {
 	struct thread_recv_data *data = (struct thread_recv_data*)p;
-	data->callback(data->addr, data->port, data->buf_l, data->buf);
+	data->callback(data->addr, data->port, data->buf, data->buf_l);
 
 	free(p);
 	return NULL;
